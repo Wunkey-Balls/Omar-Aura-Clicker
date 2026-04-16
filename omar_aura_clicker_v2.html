@@ -1,0 +1,404 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body-game {
+    display: block;
+    font-family: 'Orbitron', sans-serif;
+    background: #0a0a0f;
+    color: #fff;
+    min-height: 100vh;
+    padding: 1rem;
+  }
+  .title-bar { text-align: center; margin-bottom: 1rem; }
+  .title-bar h1 { font-size: 20px; font-weight: 900; color: #ff4500; letter-spacing: 1px; text-shadow: 0 0 12px #ff4500aa; }
+  .title-bar .subtitle { font-size: 11px; color: #888; margin-top: 2px; font-family: sans-serif; }
+  .game-layout { display: grid; grid-template-columns: 200px 1fr 200px; gap: 1rem; max-width: 860px; margin: 0 auto; }
+  .panel { background: #12121a; border: 1px solid #222; border-radius: 10px; padding: 12px; }
+  .panel h3 { font-size: 12px; color: #ff4500; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 6px; }
+  .stat-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; color: #aaa; font-family: sans-serif; }
+  .stat-row span:last-child { color: #ff8c00; font-weight: 700; }
+  .center-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .aura-count { font-size: 28px; font-weight: 900; color: #ff4500; text-align: center; text-shadow: 0 0 20px #ff450088; }
+  .aura-label { font-size: 11px; color: #666; text-align: center; margin-top: -8px; font-family: sans-serif; }
+  .click-area { position: relative; width: 180px; height: 180px; cursor: pointer; user-select: none; }
+  .click-area:active .click-ring { transform: scale(0.93); }
+  .click-ring { width: 180px; height: 180px; border-radius: 50%; border: 3px solid #ff4500; box-shadow: 0 0 18px #ff450055, inset 0 0 18px #ff450022; overflow: hidden; display: flex; align-items: center; justify-content: center; transition: transform 0.08s; background: #1a0a00; }
+  .placeholder-face { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 80px; border-radius: 50%; background: radial-gradient(circle, #1f0a00, #0a0005); }
+  .pulse-ring { position: absolute; top: 50%; left: 50%; width: 180px; height: 180px; border-radius: 50%; border: 2px solid #ff4500; transform: translate(-50%, -50%) scale(1); opacity: 0; pointer-events: none; }
+  .floaty { position: fixed; font-size: 16px; font-weight: 900; color: #ff4500; pointer-events: none; animation: floatUp 0.9s ease-out forwards; z-index: 999; font-family: 'Orbitron', sans-serif; }
+  @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-70px) scale(1.3); } }
+  @keyframes pulseOut { 0% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.7); } }
+  .upgrade-btn { width: 100%; background: #1a1a22; border: 1px solid #333; border-radius: 8px; padding: 8px 10px; color: #ccc; cursor: pointer; text-align: left; margin-bottom: 7px; transition: border-color 0.15s, background 0.15s; font-family: sans-serif; }
+  .upgrade-btn:hover:not(:disabled) { border-color: #ff4500; background: #1f0e00; }
+  .upgrade-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .upgrade-btn .upg-name { font-size: 12px; font-weight: 700; color: #ff8c00; display: block; margin-bottom: 2px; }
+  .upgrade-btn .upg-desc { font-size: 10px; color: #888; display: block; }
+  .upgrade-btn .upg-cost { font-size: 11px; color: #ff4500; font-weight: 700; float: right; margin-top: -18px; }
+  .prestige-btn { width: 100%; background: linear-gradient(135deg, #4a0080, #ff4500); border: none; border-radius: 8px; padding: 10px; color: #fff; font-weight: 900; font-size: 12px; cursor: pointer; letter-spacing: 0.5px; margin-top: 6px; font-family: 'Orbitron', sans-serif; }
+  .prestige-btn:hover { opacity: 0.85; }
+  .level-bar-wrap { width: 100%; background: #1a1a22; border-radius: 20px; height: 10px; overflow: hidden; border: 1px solid #333; }
+  .level-bar { height: 100%; background: linear-gradient(90deg, #ff4500, #ff8c00); border-radius: 20px; transition: width 0.2s; }
+  .level-label { font-size: 11px; text-align: center; color: #888; font-family: sans-serif; }
+  .fly { position: fixed; font-size: 14px; pointer-events: none; z-index: 50; transition: none; }
+  .particle { position: fixed; width: 6px; height: 6px; border-radius: 50%; pointer-events: none; z-index: 998; animation: particleFly 0.7s ease-out forwards; }
+  @keyframes particleFly { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0) translate(var(--tx), var(--ty)); } }
+  .aura-pulse { position: fixed; border-radius: 50%; border: 2px solid #ff4500; pointer-events: none; z-index: 997; animation: auraPulse 0.6s ease-out forwards; }
+  @keyframes auraPulse { 0% { opacity: 0.8; transform: translate(-50%,-50%) scale(1); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(2.5); } }
+  .fart-cloud { position: fixed; font-size: 28px; pointer-events: none; z-index: 999; animation: fartFloat 1.2s ease-out forwards; }
+  @keyframes fartFloat { 0% { opacity: 0.9; transform: scale(0.5) rotate(-10deg); } 50% { opacity: 0.7; transform: scale(1.4) rotate(10deg); } 100% { opacity: 0; transform: scale(2) rotate(20deg) translateY(-60px); } }
+  .phonk-text { position: fixed; font-size: 22px; font-weight: 900; font-family: 'Orbitron', sans-serif; color: #b800ff; pointer-events: none; z-index: 999; text-shadow: 0 0 10px #b800ffaa; animation: phonkBang 1s ease-out forwards; }
+  @keyframes phonkBang { 0% { opacity: 1; transform: scale(0.5); } 40% { transform: scale(1.3); } 100% { opacity: 0; transform: scale(1) translateY(-50px); } }
+  .sigma-flash { position: fixed; inset: 0; background: rgba(255,69,0,0.12); pointer-events: none; z-index: 996; animation: sigmaFlash 0.3s ease-out forwards; }
+  @keyframes sigmaFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+  .upgrade-visual { position: fixed; font-size: 20px; pointer-events: none; z-index: 999; animation: upgVis 1s ease-out forwards; }
+  @keyframes upgVis { 0% { opacity: 1; transform: scale(0.5) translateY(0); } 100% { opacity: 0; transform: scale(1.5) translateY(-80px); } }
+</style>
+
+<body-game>
+<div class="title-bar">
+  <h1>Omar AURA Clicker 😈🔥</h1>
+  <div class="subtitle">click to make Omar have more AURA</div>
+</div>
+<div class="game-layout">
+  <div class="panel" id="stats-panel">
+    <h3>Stats</h3>
+    <div class="stat-row"><span>Aura/click</span><span id="s-per-click">1</span></div>
+    <div class="stat-row"><span>Aura/sec</span><span id="s-per-sec">0</span></div>
+    <div class="stat-row"><span>Total clicks</span><span id="s-clicks">0</span></div>
+    <div class="stat-row"><span>All-time aura</span><span id="s-total">0</span></div>
+    <div class="stat-row"><span>Prestige</span><span id="s-prestige">x1</span></div>
+    <div style="margin-top:14px;">
+      <div class="level-label" id="level-label">Level 1 — Rookie</div>
+      <div style="height:6px;"></div>
+      <div class="level-bar-wrap"><div class="level-bar" id="level-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="center-col">
+    <div class="aura-count" id="aura-count">0</div>
+    <div class="aura-label">AURA POINTS</div>
+    <div class="click-area" id="click-area" onclick="handleClick(event)">
+      <div class="click-ring" id="click-ring">
+        <img src="https://i.imgur.com/Du74y17.jpeg" width="200" height="200">
+      </div>
+      <div class="pulse-ring" id="pulse-ring"></div>
+    </div>
+    <div id="active-visuals" style="font-size:11px;color:#555;font-family:sans-serif;text-align:center;min-height:16px;"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Upgrades</h3>
+    <div id="upgrades-list"></div>
+    <div style="margin-top:10px;">
+      <h3 style="margin-bottom:8px;">Aura Grind</h3>
+      <div class="stat-row"><span>Sus jokes</span><span id="u-sus">0</span></div>
+      <div class="stat-row"><span>Flies buzzing</span><span id="u-rizz">0</span></div>
+      <div class="stat-row"><span>Farts fired</span><span id="u-sigma">0</span></div>
+      <div class="prestige-btn" onclick="prestige()" id="prestige-btn" style="display:none;">PRESTIGE 🌟</div>
+    </div>
+  </div>
+</div>
+</body-game>
+
+<script>
+const UPGRADES = [
+  { id:'drip', name:'Sus Joke', desc:'Upgrade Omar\'s sus joke +2/click', costBase:50, costMult:1.2, bonus:'click', val:2, count:0, emoji:'🤨', effect:'sus' },
+  { id:'rizz', name:'Green Fly Aura', desc:'Omar gains a fly +1 aura/sec per fly', costBase:70, costMult:1.3, bonus:'passive', val:1, count:0, emoji:'🪰', effect:'fly' },
+  { id:'sigma', name:'Fart', desc:'Omar farts +5 aura/click', costBase:250, costMult:1.4, bonus:'click', val:5, count:0, emoji:'💨', effect:'fart' },
+  { id:'wave', name:'Ragebait', desc:'Omar ragebaits +10 aura/sec', costBase:500, costMult:1.5, bonus:'passive', val:10, count:0, emoji:'😤', effect:'rage' },
+  { id:'gyatt', name:'Pheremonemaxxing', desc:'Omar wears no socks +20 aura/click', costBase:1200, costMult:1.6, bonus:'click', val:20, count:0, emoji:'🧦', effect:'pheromone' },
+  { id:'no_cap', name:'Ayomaxxing', desc:'Omar says ayo +30 aura/sec', costBase:3000, costMult:1.7, bonus:'passive', val:30, count:0, emoji:'🗣️', effect:'ayo' },
+  { id:'slay', name:'Robot Dad', desc:'Upgrade dad router +80 aura/click', costBase:8000, costMult:1.8, bonus:'click', val:80, count:0, emoji:'🤖', effect:'robot' },
+  { id:'goat', name:'Phonk tu ta ta', desc:'Sings phonk No Batidao +100 aura/sec', costBase:20000, costMult:2, bonus:'passive', val:100, count:0, emoji:'🎵', effect:'phonk' },
+];
+
+let state = { aura:0, totalAura:0, clicks:0, perClick:1, perSec:0, prestige:1, prestigeTotal:0 };
+const LEVELS = [[0,'Rookie'],[500,'Rising'],[2000,'Known'],[8000,'Respected'],[25000,'Feared'],[100000,'Legendary'],[500000,'Mythic'],[2000000,'Divine'],[10000000,'Transcendent'],[50000000,'Omar']];
+
+// Audio context
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTone(freq, type, duration, vol=0.3, detune=0) {
+  try {
+    const ctx = getAudio();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type; osc.frequency.value = freq; osc.detune.value = detune;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(); osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+function playNoise(duration=0.1, vol=0.15) {
+  try {
+    const ctx = getAudio();
+    const buf = ctx.createBuffer(1, ctx.sampleRate*duration, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const src = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass'; filter.frequency.value = 400;
+    src.buffer = buf; src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+duration);
+    src.start();
+  } catch(e) {}
+}
+
+function playClickSound(upgrades) {
+  const hasFart = UPGRADES[2].count > 0;
+  const hasPhonk = UPGRADES[7].count > 0;
+  const hasRobot = UPGRADES[6].count > 0;
+  playTone(220, 'sine', 0.08, 0.2);
+  playTone(440, 'triangle', 0.1, 0.15, 5);
+  if (hasFart) playNoise(0.18, 0.2);
+  if (hasRobot) { playTone(80, 'sawtooth', 0.12, 0.18); playTone(160, 'square', 0.08, 0.1); }
+  if (hasPhonk) {
+    setTimeout(()=>playTone(110,'sawtooth',0.15,0.25),0);
+    setTimeout(()=>playTone(55,'sawtooth',0.2,0.3),80);
+    setTimeout(()=>playTone(165,'sawtooth',0.1,0.2),160);
+  }
+}
+
+function playUpgradeSound(effect) {
+  const sounds = {
+    sus: ()=>{ playTone(300,'sine',0.15,0.3); setTimeout(()=>playTone(450,'sine',0.15,0.3),100); },
+    fly: ()=>{ for(let i=0;i<3;i++) setTimeout(()=>playTone(800+Math.random()*400,'sine',0.08,0.15),i*60); },
+    fart: ()=>{ playNoise(0.3,0.35); playTone(80,'sine',0.3,0.2); },
+    rage: ()=>{ playTone(200,'sawtooth',0.2,0.25); setTimeout(()=>playTone(150,'sawtooth',0.2,0.25),100); },
+    pheromone: ()=>{ playTone(600,'sine',0.1,0.2); setTimeout(()=>playTone(900,'sine',0.15,0.15),80); },
+    ayo: ()=>{ [400,500,600,700].forEach((f,i)=>setTimeout(()=>playTone(f,'triangle',0.1,0.2),i*60)); },
+    robot: ()=>{ [80,160,80,200].forEach((f,i)=>setTimeout(()=>playTone(f,'square',0.1,0.3),i*70)); },
+    phonk: ()=>{ [110,55,110,165,110].forEach((f,i)=>setTimeout(()=>playTone(f,'sawtooth',0.15,0.35),i*90)); },
+  };
+  if (sounds[effect]) sounds[effect]();
+  playTone(600,'sine',0.3,0.3);
+}
+
+// Flies
+let flies = [];
+let flyCount = 0;
+function updateFlies() {
+  const needed = UPGRADES[1].count;
+  while (flies.length < needed && flies.length < 20) spawnFly();
+  while (flies.length > needed) { const f = flies.pop(); f.el.remove(); }
+}
+
+function spawnFly() {
+  const el = document.createElement('div');
+  el.className = 'fly';
+  el.textContent = '🪰';
+  document.body.appendChild(el);
+  const fly = {
+    el, x: Math.random()*window.innerWidth, y: Math.random()*window.innerHeight,
+    vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2,
+    targetX: 400, targetY: 300, phase: Math.random()*Math.PI*2
+  };
+  flies.push(fly);
+}
+
+function animateFlies() {
+  const clickArea = document.getElementById('click-area');
+  const rect = clickArea ? clickArea.getBoundingClientRect() : {left:400,top:300,width:180,height:180};
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+  const t = Date.now()/1000;
+  flies.forEach((fly, i) => {
+    fly.phase += 0.02;
+    const orbitR = 110 + i*15 + Math.sin(fly.phase*1.3)*20;
+    const angle = fly.phase + i * (Math.PI*2/Math.max(flies.length,1));
+    const tx = cx + Math.cos(angle) * orbitR;
+    const ty = cy + Math.sin(angle) * orbitR * 0.6;
+    fly.x += (tx - fly.x) * 0.08 + (Math.random()-0.5)*3;
+    fly.y += (ty - fly.y) * 0.08 + (Math.random()-0.5)*3;
+    fly.el.style.left = fly.x + 'px';
+    fly.el.style.top = fly.y + 'px';
+    fly.el.style.transform = fly.vx > 0 ? 'scaleX(-1)' : 'scaleX(1)';
+    fly.vx = (tx - fly.x) * 0.08;
+  });
+  requestAnimationFrame(animateFlies);
+}
+animateFlies();
+
+function spawnParticles(x, y, count=8) {
+  for (let i=0;i<count;i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = (i/count)*Math.PI*2;
+    const dist = 30 + Math.random()*40;
+    const tx = Math.cos(angle)*dist + 'px';
+    const ty = Math.sin(angle)*dist + 'px';
+    p.style.cssText = `left:${x}px;top:${y}px;background:#ff${Math.floor(Math.random()*150+50).toString(16).padStart(2,'0')}00;--tx:${tx};--ty:${ty};`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),700);
+  }
+}
+
+function spawnFartCloud(x, y) {
+  const el = document.createElement('div');
+  el.className = 'fart-cloud';
+  el.textContent = '💨';
+  el.style.left = (x-14)+'px';
+  el.style.top = (y-14)+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1200);
+}
+
+function spawnPhonkText(x, y) {
+  const el = document.createElement('div');
+  el.className = 'phonk-text';
+  const words = ['TU TA TA','PHONK','NA FESTA','NO BATIDAO','EL ELA DESCE','EL ELA DESCE ELA SOBE NO BAILLE PRESSAO, MINA LINDA PERIGOSA ROUBA MEU CORAZAO VAI QUICANDO VAI JOGANDO NO PERDE RAZAO NO BATIDAO NO BATIDAO SO PURA TENTACAO'];
+  el.textContent = words[Math.floor(Math.random()*words.length)];
+  el.style.left = (x-40)+'px';
+  el.style.top = (y-30)+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1000);
+}
+
+function spawnUpgradeVisual(effect, x, y) {
+  const visuals = {sus:'🤨',fly:'🪰',fart:'💨',rage:'😤',pheromone:'🧦',ayo:'🗣️',robot:'🤖',phonk:'🎵'};
+  const el = document.createElement('div');
+  el.className = 'upgrade-visual';
+  el.textContent = visuals[effect] || '✨';
+  el.style.left = (x-15)+'px';
+  el.style.top = (y-15)+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1000);
+}
+
+function getLevel(total) {
+  let lv=0;
+  for (let i=0;i<LEVELS.length;i++) { if(total>=LEVELS[i][0]) lv=i; else break; }
+  return lv;
+}
+function upgradeCost(u) { return Math.floor(u.costBase*Math.pow(u.costMult,u.count)); }
+function formatNum(n) {
+  if(n>=1e9) return (n/1e9).toFixed(2)+'B';
+  if(n>=1e6) return (n/1e6).toFixed(2)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return Math.floor(n).toString();
+}
+
+function renderUpgrades() {
+  const list = document.getElementById('upgrades-list');
+  list.innerHTML='';
+  UPGRADES.forEach(u => {
+    const cost=upgradeCost(u);
+    const btn=document.createElement('button');
+    btn.className='upgrade-btn';
+    btn.disabled=state.aura<cost;
+    btn.innerHTML=`<span class="upg-name">${u.emoji} ${u.name} <small style="color:#555;font-size:9px;">(x${u.count})</small></span><span class="upg-desc">${u.desc}</span><span class="upg-cost">${formatNum(cost)} ✨</span>`;
+    btn.onclick=()=>buyUpgrade(u,btn);
+    list.appendChild(btn);
+  });
+}
+
+function buyUpgrade(u, btn) {
+  const cost=upgradeCost(u);
+  if(state.aura<cost) return;
+  state.aura-=cost;
+  u.count++;
+  if(u.bonus==='click') state.perClick+=u.val;
+  if(u.bonus==='passive') state.perSec+=u.val;
+  playUpgradeSound(u.effect);
+  if(btn) {
+    const r=btn.getBoundingClientRect();
+    spawnUpgradeVisual(u.effect, r.left+r.width/2, r.top);
+  }
+  if(u.effect==='fly') updateFlies();
+  updateStats();
+  renderUpgrades();
+}
+
+function updateStats() {
+  const epc=Math.floor(state.perClick*state.prestige);
+  const eps=(state.perSec*state.prestige).toFixed(1);
+  document.getElementById('aura-count').textContent=formatNum(state.aura);
+  document.getElementById('s-per-click').textContent=formatNum(epc);
+  document.getElementById('s-per-sec').textContent=eps;
+  document.getElementById('s-clicks').textContent=formatNum(state.clicks);
+  document.getElementById('s-total').textContent=formatNum(state.totalAura);
+  document.getElementById('s-prestige').textContent='x'+state.prestige;
+  document.getElementById('u-sus').textContent=UPGRADES[0].count+UPGRADES[2].count+UPGRADES[4].count+UPGRADES[6].count;
+  document.getElementById('u-rizz').textContent=UPGRADES[1].count;
+  document.getElementById('u-sigma').textContent=UPGRADES[2].count;
+  const lv=getLevel(state.totalAura);
+  const lvData=LEVELS[lv];
+  const nextLv=LEVELS[lv+1];
+  document.getElementById('level-label').textContent=`Level ${lv+1} — ${lvData[1]}`;
+  if(nextLv) {
+    const pct=((state.totalAura-lvData[0])/(nextLv[0]-lvData[0])*100).toFixed(1);
+    document.getElementById('level-bar').style.width=Math.min(100,pct)+'%';
+  } else { document.getElementById('level-bar').style.width='100%'; }
+  document.getElementById('prestige-btn').style.display=state.totalAura>=50000?'block':'none';
+
+  // Update active visuals indicator
+  const active=[];
+  if(UPGRADES[1].count>0) active.push(`🪰x${UPGRADES[1].count}`);
+  if(UPGRADES[2].count>0) active.push(`💨x${UPGRADES[2].count}`);
+  if(UPGRADES[7].count>0) active.push(`🎵x${UPGRADES[7].count}`);
+  document.getElementById('active-visuals').textContent=active.join(' ');
+}
+
+let clickCooldown = false;
+function handleClick(e) {
+  const gain=Math.floor(state.perClick*state.prestige);
+  state.aura+=gain; state.totalAura+=gain; state.clicks++;
+
+  playClickSound();
+
+  const floaty=document.createElement('div');
+  floaty.className='floaty';
+  floaty.textContent='+'+formatNum(gain)+' ✨';
+  floaty.style.left=(e.clientX-20)+'px';
+  floaty.style.top=(e.clientY-20)+'px';
+  document.body.appendChild(floaty);
+  setTimeout(()=>floaty.remove(),900);
+
+  spawnParticles(e.clientX, e.clientY, 6+Math.min(UPGRADES[6].count*2,12));
+
+  if(UPGRADES[2].count>0) spawnFartCloud(e.clientX+20+(Math.random()-0.5)*40, e.clientY-20);
+  if(UPGRADES[7].count>0 && Math.random()<0.4) spawnPhonkText(e.clientX, e.clientY-40);
+
+  const pulse=document.createElement('div');
+  pulse.className='aura-pulse';
+  pulse.style.cssText=`left:${e.clientX}px;top:${e.clientY}px;width:${40+gain*0.1}px;height:${40+gain*0.1}px;`;
+  document.body.appendChild(pulse);
+  setTimeout(()=>pulse.remove(),600);
+
+  const ring=document.getElementById('pulse-ring');
+  ring.style.animation='none'; ring.offsetHeight;
+  ring.style.animation='pulseOut 0.5s ease-out forwards';
+
+  updateStats(); renderUpgrades();
+}
+
+function prestige() {
+  if(!confirm('Prestige? You lose all aura & upgrades but your multiplier increases!')) return;
+  state.prestigeTotal++;
+  state.prestige=1+state.prestigeTotal*0.5;
+  state.aura=0; state.perClick=1; state.perSec=0;
+  UPGRADES.forEach(u=>{u.count=0;});
+  flies.forEach(f=>f.el.remove()); flies=[];
+  playTone(440,'sine',0.1,0.4); setTimeout(()=>playTone(880,'sine',0.3,0.4),100);
+  updateStats(); renderUpgrades();
+}
+
+setInterval(()=>{
+  if(state.perSec>0) {
+    const gain=state.perSec*state.prestige/10;
+    state.aura+=gain; state.totalAura+=gain;
+    updateStats(); renderUpgrades();
+  }
+},100);
+
+updateStats(); renderUpgrades();
+</script>
